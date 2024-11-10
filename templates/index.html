@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Spam Detector</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <style>
+        :root {
+            --gradient-1: #4158D0;
+            --gradient-2: #C850C0;
+            --gradient-3: #FFCC70;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --input-bg: rgba(255, 255, 255, 0.95);
+            --success-color: #22c55e;
+            --error-color: #ef4444;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: linear-gradient(-45deg, var(--gradient-1), var(--gradient-2), var(--gradient-3));
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            background: var(--card-bg);
+            padding: clamp(24px, 5vw, 40px);
+            border-radius: 20px;
+            width: min(95%, 650px);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transform-style: preserve-3d;
+            perspective: 1000px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-5px) rotateX(2deg);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        h1 {
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
+            background: linear-gradient(45deg, var(--gradient-1), var(--gradient-2));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-align: center;
+            margin-bottom: 2rem;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+            font-weight: 800;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            height: clamp(120px, 20vh, 200px);
+            resize: vertical;
+            font-size: 1rem;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--gradient-2);
+            box-shadow: 0 0 0 4px rgba(200, 80, 192, 0.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 16px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            background: linear-gradient(45deg, var(--gradient-1), var(--gradient-2));
+            color: white;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.2),
+                transparent
+            );
+            transition: 0.5s;
+        }
+
+        button:hover::before {
+            left: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(65, 88, 208, 0.3);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        #result {
+            margin-top: 1.5rem;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 1.2rem;
+            display: none;
+            animation: slideUp 0.4s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .spam {
+            background: linear-gradient(135deg, var(--error-color), #dc2626);
+            color: white;
+        }
+
+        .not-spam {
+            background: linear-gradient(135deg, var(--success-color), #16a34a);
+            color: white;
+        }
+
+        .confidence {
+            font-size: 1rem;
+            margin-top: 10px;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .error {
+            background: linear-gradient(135deg, var(--error-color), #dc2626);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 1rem;
+            display: none;
+            animation: shake 0.5s ease;
+            text-align: center;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* Loading animation */
+        .loading {
+            position: relative;
+            pointer-events: none;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            margin: -10px 0 0 -10px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Floating animation for container */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .container {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        /* Glass morphism effect for all cards */
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+                animation: none;
+            }
+
+            button {
+                padding: 14px 20px;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container glass">
+        <h1>Spam Shield</h1>
+        <div class="input-group">
+            <textarea 
+                id="message" 
+                placeholder="Type or paste your message here..."
+                aria-label="Message to check for spam"></textarea>
+        </div>
+        <button onclick="checkSpam()">Analyze Message</button>
+        <div id="result" role="alert" aria-live="polite"></div>
+        <div id="error" class="error" role="alert"></div>
+    </div>
+
+    <script>
+        function checkSpam() {
+            const message = document.getElementById('message').value;
+            const resultDiv = document.getElementById('result');
+            const errorDiv = document.getElementById('error');
+            const button = document.querySelector('button');
+
+            if (!message.trim()) {
+                errorDiv.textContent = 'Please enter a message to analyze';
+                errorDiv.style.display = 'block';
+                resultDiv.style.display = 'none';
+                return;
+            }
+
+            // Add loading state
+            button.disabled = true;
+            button.classList.add('loading');
+            button.textContent = '';
+
+            $.ajax({
+                url: '/predict',
+                type: 'POST',
+                data: { message: message },
+                success: function(response) {
+                    if (response.error) {
+                        errorDiv.textContent = response.error;
+                        errorDiv.style.display = 'block';
+                        resultDiv.style.display = 'none';
+                    } else {
+                        errorDiv.style.display = 'none';
+                        resultDiv.style.display = 'block';
+                        resultDiv.className = response.prediction.toLowerCase().replace(' ', '-');
+                        resultDiv.innerHTML = `
+                            <div><strong>${response.prediction}</strong></div>
+                            <div class="confidence">Confidence Level: ${response.confidence}</div>
+                        `;
+                    }
+                },
+                error: function() {
+                    errorDiv.textContent = 'An error occurred. Please try again.';
+                    errorDiv.style.display = 'block';
+                    resultDiv.style.display = 'none';
+                },
+                complete: function() {
+                    button.disabled = false;
+                    button.classList.remove('loading');
+                    button.textContent = 'Analyze Message';
+                }
+            });
+        }
+
+        // Enable Enter key submission
+        document.getElementById('message').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                checkSpam();
+            }
+        });
+    </script>
+</body>
+</html>
